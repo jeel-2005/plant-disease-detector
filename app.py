@@ -4,11 +4,11 @@ from PIL import Image
 import gdown
 import os
 
-# Hide TensorFlow logs (safe even if TF not installed)
+# Hide TensorFlow logs
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-# Use keras instead of tensorflow.keras
-from keras.models import load_model
+# Correct import (IMPORTANT)
+from tensorflow.keras.models import load_model
 
 # -----------------------------
 # 🎨 PAGE CONFIG
@@ -16,7 +16,7 @@ from keras.models import load_model
 st.set_page_config(page_title="🌿 Plant Disease Detector", layout="centered")
 
 # -----------------------------
-# 🌿 CUSTOM UI (ANIMATED)
+# 🌿 CUSTOM UI
 # -----------------------------
 st.markdown("""
 <style>
@@ -42,7 +42,6 @@ h1 {
     background-color: #00ffcc;
     color: black;
     border-radius: 10px;
-    transition: 0.3s;
 }
 .stButton>button:hover {
     background-color: #00cc99;
@@ -53,7 +52,7 @@ h1 {
 st.markdown("<h1>🌱 AI Plant Disease Detection</h1>", unsafe_allow_html=True)
 
 # -----------------------------
-# 📥 DOWNLOAD MODEL FROM DRIVE
+# 📥 DOWNLOAD MODEL
 # -----------------------------
 MODEL_URL = "https://drive.google.com/uc?id=1i8xdXb0nR1NPTguAYQTDfG9zsPSLbZqd"
 MODEL_PATH = "model.h5"
@@ -87,7 +86,7 @@ class_names = [
 ]
 
 # -----------------------------
-# 🌿 TREATMENT SUGGESTIONS
+# 🌿 TREATMENT
 # -----------------------------
 treatment = {
     "Pepper Bell Bacterial Spot": "Use copper-based fungicide.",
@@ -109,7 +108,7 @@ treatment = {
 }
 
 # -----------------------------
-# 📤 IMAGE UPLOAD
+# 📤 UPLOAD IMAGE
 # -----------------------------
 uploaded_file = st.file_uploader("📸 Upload Leaf Image", type=["jpg", "png", "jpeg"])
 
