@@ -1,22 +1,72 @@
 import streamlit as st
 import numpy as np
-import tensorflow as tf
 from PIL import Image
 import gdown
 import os
 
-# ================= DOWNLOAD MODEL =================
+# Hide TensorFlow logs (safe even if TF not installed)
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
+# Use keras instead of tensorflow.keras
+from keras.models import load_model
+
+# -----------------------------
+# 🎨 PAGE CONFIG
+# -----------------------------
+st.set_page_config(page_title="🌿 Plant Disease Detector", layout="centered")
+
+# -----------------------------
+# 🌿 CUSTOM UI (ANIMATED)
+# -----------------------------
+st.markdown("""
+<style>
+body {
+    background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+    color: white;
+}
+.main {
+    background-color: rgba(0,0,0,0.6);
+    border-radius: 20px;
+    padding: 20px;
+}
+h1 {
+    text-align: center;
+    color: #00ffcc;
+    animation: fadeIn 2s ease-in-out;
+}
+@keyframes fadeIn {
+    from {opacity: 0;}
+    to {opacity: 1;}
+}
+.stButton>button {
+    background-color: #00ffcc;
+    color: black;
+    border-radius: 10px;
+    transition: 0.3s;
+}
+.stButton>button:hover {
+    background-color: #00cc99;
+}
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown("<h1>🌱 AI Plant Disease Detection</h1>", unsafe_allow_html=True)
+
+# -----------------------------
+# 📥 DOWNLOAD MODEL FROM DRIVE
+# -----------------------------
 MODEL_URL = "https://drive.google.com/uc?id=1i8xdXb0nR1NPTguAYQTDfG9zsPSLbZqd"
 MODEL_PATH = "model.h5"
 
 if not os.path.exists(MODEL_PATH):
-    with st.spinner("🌿 Downloading AI Model..."):
+    with st.spinner("Downloading AI model..."):
         gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
 
-# ================= LOAD MODEL =================
-model = tf.keras.models.load_model(MODEL_PATH)
+model = load_model(MODEL_PATH)
 
-# ================= CLASS NAMES =================
+# -----------------------------
+# 📊 CLASS NAMES (16)
+# -----------------------------
 class_names = [
     "Pepper Bell Bacterial Spot",
     "Pepper Bell Healthy",
@@ -33,108 +83,54 @@ class_names = [
     "Tomato Leaf Mold",
     "Tomato Septoria Leaf Spot",
     "Tomato Spider Mites",
-    "Unknown Disease"
+    "Tomato Leaf Curl"
 ]
 
-# ================= TREATMENT =================
-treatments = {
-    "Pepper Bell Bacterial Spot": "Use copper-based fungicides.",
+# -----------------------------
+# 🌿 TREATMENT SUGGESTIONS
+# -----------------------------
+treatment = {
+    "Pepper Bell Bacterial Spot": "Use copper-based fungicide.",
     "Pepper Bell Healthy": "No treatment needed.",
-    "Potato Early Blight": "Use fungicide and remove infected leaves.",
+    "Potato Early Blight": "Apply fungicide and remove infected leaves.",
     "Potato Healthy": "Healthy plant.",
-    "Potato Late Blight": "Apply fungicide immediately.",
-    "Tomato Target Spot": "Use resistant varieties.",
+    "Potato Late Blight": "Use resistant varieties and fungicide.",
+    "Tomato Target Spot": "Use fungicide and proper spacing.",
     "Tomato Mosaic Virus": "Remove infected plants.",
     "Tomato Yellow Leaf Curl Virus": "Control whiteflies.",
-    "Tomato Bacterial Spot": "Use copper sprays.",
-    "Tomato Early Blight": "Apply fungicide.",
+    "Tomato Bacterial Spot": "Use copper spray.",
+    "Tomato Early Blight": "Use fungicide.",
     "Tomato Healthy": "Healthy plant.",
-    "Tomato Late Blight": "Use fungicides urgently.",
+    "Tomato Late Blight": "Apply fungicide immediately.",
     "Tomato Leaf Mold": "Improve air circulation.",
     "Tomato Septoria Leaf Spot": "Remove infected leaves.",
-    "Tomato Spider Mites": "Use insecticidal soap.",
-    "Unknown Disease": "Consult expert."
+    "Tomato Spider Mites": "Use neem oil spray.",
+    "Tomato Leaf Curl": "Control insects."
 }
 
-# ================= UI =================
-st.set_page_config(page_title="🌿 AI Plant Doctor", layout="wide")
+# -----------------------------
+# 📤 IMAGE UPLOAD
+# -----------------------------
+uploaded_file = st.file_uploader("📸 Upload Leaf Image", type=["jpg", "png", "jpeg"])
 
-# 🌈 Animated Background + Glass UI
-st.markdown("""
-<style>
-@keyframes gradientBG {
-    0% {background-position: 0% 50%;}
-    50% {background-position: 100% 50%;}
-    100% {background-position: 0% 50%;}
-}
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    st.image(image, caption="Uploaded Image", use_column_width=True)
 
-.stApp {
-    background: linear-gradient(-45deg, #43cea2, #185a9d, #56ab2f, #a8e063);
-    background-size: 400% 400%;
-    animation: gradientBG 12s ease infinite;
-}
-
-/* Glass card */
-.card {
-    background: rgba(255, 255, 255, 0.15);
-    padding: 25px;
-    border-radius: 20px;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-    margin-top: 20px;
-}
-
-/* Title */
-.title {
-    text-align: center;
-    font-size: 42px;
-    font-weight: bold;
-    color: white;
-}
-
-/* Upload box */
-.stFileUploader {
-    border-radius: 15px;
-}
-
-/* Result boxes */
-.result {
-    font-size: 22px;
-    font-weight: bold;
-    color: white;
-}
-
-</style>
-""", unsafe_allow_html=True)
-
-st.markdown('<div class="title">🌱 AI Plant Disease Detector</div>', unsafe_allow_html=True)
-
-st.markdown('<div class="card">', unsafe_allow_html=True)
-
-uploaded_file = st.file_uploader("📸 Upload Leaf Image", type=["jpg", "png"])
-
-if uploaded_file:
-    image = Image.open(uploaded_file).resize((224, 224))
-    st.image(image, caption="🖼 Uploaded Image", use_column_width=True)
-
-    img_array = np.array(image) / 255.0
+    # Preprocess
+    img = image.resize((224, 224))
+    img_array = np.array(img) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
 
-    with st.spinner("🔍 Analyzing Plant..."):
-        prediction = model.predict(img_array)
+    # Prediction
+    prediction = model.predict(img_array)
+    predicted_index = np.argmax(prediction[0])
+    predicted_class = class_names[predicted_index]
+    confidence = prediction[0][predicted_index] * 100
 
-    pred_len = prediction.shape[1]
-    class_len = len(class_names)
+    # Output
+    st.success(f"🌿 Prediction: {predicted_class}")
+    st.info(f"📊 Confidence: {confidence:.2f}%")
 
-    if pred_len != class_len:
-        st.error(f"⚠ Model Output: {pred_len}, Classes: {class_len}")
-    else:
-        index = np.argmax(prediction)
-        confidence = prediction[0][index] * 100
-        disease = class_names[index]
-
-        st.markdown(f'<div class="result">🌿 Disease: {disease}</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="result">📊 Confidence: {confidence:.2f}%</div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="result">💊 Treatment: {treatments[disease]}</div>', unsafe_allow_html=True)
-
-st.markdown('</div>', unsafe_allow_html=True)
+    # Treatment
+    st.warning(f"💊 Treatment: {treatment[predicted_class]}")
